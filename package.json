@@ -1,41 +1,41 @@
 {
-    "name": "raml-mocker",
-    "version": "0.1.13",
-    "description": "Node module to create random responses to requests based on RAML rest definition and json-schema.",
-    "main": "src/index.js",
-    "directories": {
-        "test": "test",
-        "src": "src"
-    },
-    "scripts": {
-        "test": "node test/ramlTest.js"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/RePoChO/raml-mocker.git"
-    },
-    "keywords": [
-        "RAML",
-        "json",
-        "schema",
-        "json-schema",
-        "faker",
-        "mock",
-        "mocker",
-        "fixture",
-        "random",
-        "api"
-    ],
-    "author": "David Vega Fontelos",
-    "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/RePoChO/raml-mocker/issues"
-    },
-    "homepage": "https://github.com/RePoChO/raml-mocker",
-    "dependencies": {
-        "async": "2.0.0-rc.1",
-        "faker": "^3.1.0",
-        "lodash": "^4.6.1",
-        "raml-parser": "^0.8.15"
-    }
+  "name": "raml-mocker",
+  "version": "0.1.13",
+  "description": "Node module to create random responses to requests based on RAML rest definition and json-schema.",
+  "main": "src/index.js",
+  "directories": {
+    "test": "test",
+    "src": "src"
+  },
+  "scripts": {
+    "test": "node test/ramlTest.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RePoChO/raml-mocker.git"
+  },
+  "keywords": [
+    "RAML",
+    "json",
+    "schema",
+    "json-schema",
+    "faker",
+    "mock",
+    "mocker",
+    "fixture",
+    "random",
+    "api"
+  ],
+  "author": "David Vega Fontelos",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/RePoChO/raml-mocker/issues"
+  },
+  "homepage": "https://github.com/RePoChO/raml-mocker",
+  "dependencies": {
+    "async": "2.0.0-rc.1",
+    "faker": "^3.1.0",
+    "lodash": "^4.6.1",
+    "raml-1-parser": "0.1.0-beta.11"
+  }
 }

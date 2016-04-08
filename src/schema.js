@@ -4,15 +4,24 @@ var fs = require('fs');
 var faker = require('faker');
 var FormatMocker = require('./format');
 
-var DataMocker = function (schema, formats) {
+var DataMocker = function (definition, formats) {
     var formatMocker = new FormatMocker(formats);
     var mocker = new SchemaMocker();
     mocker.formatMocker = formatMocker;
-    return mocker._mocker(schema, schema);
+    if (definition.schema) {
+        return mocker._mocker(definition.schema, definition.schema);
+    }
+    else {
+        return mocker._mockerType(definition.type, definition.type);
+    }
 };
 
 var SchemaMocker = function () {
     return {
+        _mockerType: function (definition, wholeSchema) {
+            console.log('schema.js:22', definition.properties());
+            _.map(definition.definition().allProperties(), function(prop) {console.log("---", prop._name)});
+        },
         _mocker: function (schema, wholeSchema) {
             if (schema.$ref) {
                 var ref = schema.$ref;
