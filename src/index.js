@@ -161,6 +161,7 @@ function getResponsesByCode(responses, api) {
             responsesByCode.push({
                 code: code,
                 type: body,
+                types: typeByName,
                 example: example
             });
         }

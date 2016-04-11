@@ -12,15 +12,14 @@ var DataMocker = function (definition, formats) {
         return mocker._mocker(definition.schema, definition.schema);
     }
     else {
-        return mocker._mockerType(definition.type, definition.type);
+        return mocker._mockerType(definition.type, definition.types);
     }
 };
 
 var SchemaMocker = function () {
     return {
         _mockerType: function (definition, wholeSchema) {
-            console.log('schema.js:22', definition.properties());
-            _.map(definition.definition().allProperties(), function(prop) {console.log("---", prop._name)});
+            console.log('schema.js:22', definition.definition().allSuperTypes());
         },
         _mocker: function (schema, wholeSchema) {
             if (schema.$ref) {
