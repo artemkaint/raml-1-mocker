@@ -12,14 +12,44 @@ var DataMocker = function (definition, formats) {
         return mocker._mocker(definition.schema, definition.schema);
     }
     else {
-        return mocker._mockerType(definition.type, definition.types);
+        return mocker._mockerType(definition.body, definition.types);
     }
 };
 
 var SchemaMocker = function () {
     return {
-        _mockerType: function (definition, wholeSchema) {
+        _mockerType: function (definition, types) {
             console.log('schema.js:22', definition.definition().allSuperTypes());
+            var runtimeDefinition = definition.runtimeDefinition();
+
+            var parse = function (def) {
+                var mocks = [];
+                var pushMock = function (mock) {
+                    if (mock) {
+                        if (_.isArray(mock)) {
+                            mocks = [].concat(mocks, mock);
+                        }
+                        else {
+                            mocks.push(mock);
+                        }
+                    }
+                }
+
+                switch (false) {
+                    case !def.isUnion():
+                        pushMock(parse(runtimeDefinition.leftType()));
+                        pushMock(parse(runtimeDefinition.rightType()));
+                        break;
+                    case !def.hasStructure():
+                        var type = types[def.typeId()];
+                        if (type) {
+                            types[def.typeId()]
+                        }
+                        break;
+                }
+                return mocks;
+            }
+            parse(runtimeDefinition);
         },
         _mocker: function (schema, wholeSchema) {
             if (schema.$ref) {

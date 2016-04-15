@@ -126,7 +126,7 @@ function getRamlRequestsToMockMethods(definition, api, uri, formats, callback) {
             var currentMockDefaultCode = null;
             _.each(responsesMethodByCode, function (reqDefinition) {
                 methodMocker.addResponse(reqDefinition.code, function () {
-                    if (reqDefinition.schema || reqDefinition.type) {
+                    if (reqDefinition.schema || reqDefinition.body) {
                         return schemaMocker(reqDefinition, formats);
                     } else {
                         return null;
@@ -160,7 +160,7 @@ function getResponsesByCode(responses, api) {
         if (body.type()) {
             responsesByCode.push({
                 code: code,
-                type: body,
+                body: body,
                 types: typeByName,
                 example: example
             });
