@@ -36,6 +36,6 @@
     "async": "2.0.0-rc.1",
     "faker": "^3.1.0",
     "lodash": "^4.6.1",
-    "raml-1-parser": "0.2.0"
+    "raml-1-parser": "0.2.1"
   }
 }
