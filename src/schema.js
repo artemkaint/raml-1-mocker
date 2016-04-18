@@ -97,21 +97,44 @@ var SchemaMocker = function () {
                     }
                 };
 
+                var runtimeParse = function (type, mock) {
+                    mock || (mock = {});
+                    var runtimeType = type.runtimeType();
+                    if (runtimeType) {
+                        _.each(runtimeType.superTypes(), function (superType) {
+                            _.each(parse(superType), function (parentMock) {
+                                mock = _.extend({}, mock, parentMock);
+                            })
+                        });
+                    }
+                    return mock;
+                };
+
+                var getCustomPropertyType = function (property, types) {
+                    var customType = _.filter(_.map(property.type(), function (type) {
+                        return types[type];
+                    }), function (type) {
+                        return !!type;
+                    });
+                    // TODO: there is only one type support today
+                    return customType.length ? customType[0] : null;
+                };
+
                 switch (false) {
                     case !def.isUnion():
-                        pushMock(parse(runtimeDefinition.leftType()));
-                        pushMock(parse(runtimeDefinition.rightType()));
-                        break;
+                        pushMock(parse(def.leftType()));
+                        pushMock(parse(def.rightType()));
+                        return _.sample(mocks);
                     case !def.hasStructure():
-                        var mock = {};
                         var type = types[def.typeId()];
                         if (type) {
                             var fillProperties = function (type) {
-                                var obj = {}
+                                var obj = {};
                                 _.each(type.properties(), function (property) {
                                     var getPropValue = function (property) {
-                                        var runtimeType = property.runtimeType();
                                         switch (false) {
+                                            case !getCustomPropertyType(property, types):
+                                                return getPropValue(getCustomPropertyType(property, types));
                                             case !(property.kind() == 'NumberTypeDeclaration'):                                                
                                                 return mocker.numberMocker(property);
                                             case !(property.kind() == 'IntegerTypeDeclaration'):
@@ -120,6 +143,13 @@ var SchemaMocker = function () {
                                                 return mocker.stringMocker(property);
                                             case !(property.kind() == 'BooleanTypeDeclaration'):
                                                 return mocker.booleanMocker(property);
+                                            case !(property.kind() == 'ObjectTypeDeclaration'):
+                                                var runtimeType = property.runtimeType();
+                                                var mock = {};
+                                                _.each(parse(runtimeType), function (currentMock) {
+                                                    mock = _.extend({}, mock, currentMock);
+                                                });
+                                                return runtimeParse(property, mock);
                                             case !(property.examples() && property.examples().length):
                                                 return _.sample(property.example());
                                             default:
@@ -133,24 +163,15 @@ var SchemaMocker = function () {
                                 });
                                 return obj;
                             };
-                            mock = _.extend({}, mock, fillProperties(type));
-                            var runtimeType = type.runtimeType();
-                            if (runtimeType) {
-                                _.each(runtimeType.superTypes(), function (type) {
-                                    _.each(parse(type), function (parentMock) {
-                                        mock = _.extend({}, mock, parentMock);
-                                    })
-                                });
-                            }
-                            pushMock(mock);
+                            pushMock(runtimeParse(type, fillProperties(type)));
                         }
                         break;
                 }
                 return mocks;
             };
-            var res = parse(runtimeDefinition);
-            return res;
+            return parse(runtimeDefinition);
         },
+
         _mocker: function (schema, wholeSchema) {
             if (schema.$ref) {
                 var ref = schema.$ref;
