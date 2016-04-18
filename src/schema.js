@@ -3,6 +3,7 @@ var _ = require('lodash');
 var fs = require('fs');
 var faker = require('faker');
 var FormatMocker = require('./format');
+var randexp = require('randexp').randexp;
 
 var DataMocker = function (definition, formats) {
     var formatMocker = new FormatMocker(formats);
@@ -70,14 +71,17 @@ var SchemaMocker = function () {
          * @private
          *
          * @todo enum
-         * @todo pattern
          */
         stringMocker: function (property) {
-            var ret = null;
-            var minLength = property.minLength() || 1;
-            var maxLength = property.maxLength() || (minLength < 50 ? 50 : minLength);
-            var strLen = _.random(minLength, maxLength);
-            return faker.lorem.words(strLen).substring(0, strLen).trim();
+            if (property.pattern()) {
+                return randexp(property.pattern());
+            }
+            else {
+                var minLength = property.minLength() || 1;
+                var maxLength = property.maxLength() || (minLength < 50 ? 50 : minLength);
+                var strLen = _.random(minLength, maxLength);
+                return faker.lorem.words(strLen).substring(0, strLen).trim();
+            }
         },
 
         _mockerType: function (definition, types) {
