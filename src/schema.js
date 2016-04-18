@@ -18,9 +18,71 @@ var DataMocker = function (definition, formats) {
 
 var SchemaMocker = function () {
     return {
+        /**
+         * @param {TypeDeclarationImpl} property
+         * @param {Boolean} floating
+         * @returns {null}
+         * @private
+         *
+         * @todo enum
+         * @todo pattern
+         */
+        _numberMocker: function (property, floating) {
+            var ret = null;
+            if (property.multipleOf()) {
+                var multipleMin = 1;
+                var multipleMax = 5;
+
+                if (property.maximum() !== undefined) {
+                    if ((property.maximum() === property.multipleOf()) || (property.maximum() > property.multipleOf())) {
+                        multipleMax = Math.floor(property.maximum() / property.multipleOf());
+                    } else {
+                        multipleMin = 0;
+                        multipleMax = 0;
+                    }
+                }
+                ret = property.multipleOf() * _.random(multipleMin, multipleMax, floating);
+            } else {
+                var minimum = _.isNumber(property.minimum()) ? property.minimum() : -99999999999;
+                var maximum = _.isNumber(property.maximum()) ? property.maximum() : 99999999999;
+                var gap = maximum - minimum;
+
+                var minFloat = this._getMinFloat(minimum);
+                if (minFloat < this._getMinFloat(maximum)) {
+                    minFloat = this._getMinFloat(maximum);
+                }
+                var maxFloat = minFloat + _.random(0, 2);
+                var littleGap = this._toFloat(_.random(0, gap, floating), _.random(minFloat, maxFloat)) / 10;
+                ret = this._toFloat(_.random(minimum, maximum, floating), _.random(minFloat, maxFloat));
+                if (ret === property.maximum()) {
+                    ret -= littleGap;
+                }
+                if (ret === property.minimum()) {
+                    ret += littleGap;
+                }
+            }
+            return ret;
+        },
+
+        /**
+         * @param {TypeDeclarationImpl} property
+         * @returns {string}
+         * @private
+         *
+         * @todo enum
+         * @todo pattern
+         */
+        stringMocker: function (property) {
+            var ret = null;
+            var minLength = property.minLength() || 1;
+            var maxLength = property.maxLength() || (minLength < 50 ? 50 : minLength);
+            var strLen = _.random(minLength, maxLength);
+            return faker.lorem.words(strLen).substring(0, strLen).trim();
+        },
+
         _mockerType: function (definition, types) {
-            console.log('schema.js:22', definition.definition().allSuperTypes());
             var runtimeDefinition = definition.runtimeDefinition();
+            var mocker = this;
 
             var parse = function (def) {
                 var mocks = [];
@@ -33,7 +95,7 @@ var SchemaMocker = function () {
                             mocks.push(mock);
                         }
                     }
-                }
+                };
 
                 switch (false) {
                     case !def.isUnion():
@@ -41,15 +103,53 @@ var SchemaMocker = function () {
                         pushMock(parse(runtimeDefinition.rightType()));
                         break;
                     case !def.hasStructure():
+                        var mock = {};
                         var type = types[def.typeId()];
                         if (type) {
-                            types[def.typeId()]
+                            var fillProperties = function (type) {
+                                var obj = {}
+                                _.each(type.properties(), function (property) {
+                                    var getPropValue = function (property) {
+                                        var runtimeType = property.runtimeType();
+                                        switch (false) {
+                                            case !(property.kind() == 'NumberTypeDeclaration'):                                                
+                                                return mocker.numberMocker(property);
+                                            case !(property.kind() == 'IntegerTypeDeclaration'):
+                                                return mocker.integerMocker(property);
+                                            case !(property.kind() == 'StringTypeDeclaration'):
+                                                return mocker.stringMocker(property);
+                                            case !(property.kind() == 'BooleanTypeDeclaration'):
+                                                return mocker.booleanMocker(property);
+                                            case !(property.examples() && property.examples().length):
+                                                return _.sample(property.example());
+                                            default:
+                                                return property.example();
+                                        }
+                                    };
+                                    var getPropName = function (property) {
+                                        return property.name();
+                                    };
+                                    obj[getPropName(property)] = getPropValue(property);
+                                });
+                                return obj;
+                            };
+                            mock = _.extend({}, mock, fillProperties(type));
+                            var runtimeType = type.runtimeType();
+                            if (runtimeType) {
+                                _.each(runtimeType.superTypes(), function (type) {
+                                    _.each(parse(type), function (parentMock) {
+                                        mock = _.extend({}, mock, parentMock);
+                                    })
+                                });
+                            }
+                            pushMock(mock);
                         }
                         break;
                 }
                 return mocks;
-            }
-            parse(runtimeDefinition);
+            };
+            var res = parse(runtimeDefinition);
+            return res;
         },
         _mocker: function (schema, wholeSchema) {
             if (schema.$ref) {
@@ -182,7 +282,7 @@ var SchemaMocker = function () {
             return ret;
         },
 
-        stringMocker: function (schema) {
+        stringMockerOld: function (schema) {
             /**
              * TODO:
              * maxLength
@@ -229,7 +329,7 @@ var SchemaMocker = function () {
          * @returns {null}
          * @private
          */
-        _numberMocker: function (schema, floating) {
+        _numberMockerOld: function (schema, floating) {
             var ret = null;
             /**
              * TODO:
@@ -273,12 +373,12 @@ var SchemaMocker = function () {
             return ret;
         },
 
-        numberMocker: function (schema) {
-            return this._numberMocker(schema, true);
+        numberMocker: function (property) {
+            return this._numberMocker(property, true);
         },
 
-        integerMocker: function (schema) {
-            return this._numberMocker(schema, false);
+        integerMocker: function (property) {
+            return this._numberMocker(property, false);
         },
 
         booleanMocker: function (schema) {
