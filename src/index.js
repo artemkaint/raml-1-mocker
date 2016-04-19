@@ -1,11 +1,12 @@
 'use strict';
-var path = require('path'),
-    fs = require('fs'),
-    async = require('async'),
-    raml = require('raml-1-parser'),
-    _ = require('lodash'),
-    schemaMocker = require('./schema.js'),
-    RequestMocker = require('./requestMocker.js');
+var path = require('path');
+var fs = require('fs');
+var async = require('async');
+var raml = require('raml-1-parser');
+var _ = require('lodash');
+var dataMocker = require('./dataMocker');
+var RequestMocker = require('./requestMocker');
+var oldMocker = require('raml-mocker');
 
 function generate(options, callback) {
     if (options) {
@@ -58,11 +59,23 @@ function generateFromPath(filesPath, callback) {
 function generateFromFiles(files, callback) {
     var requestsToMock = [];
     async.each(files, function(file, cb) {
-        raml.loadApi(file).then(function (data) {
-            getRamlRequestsToMock(data, data, '/', function(reqs) {
-                requestsToMock = _.union(requestsToMock, reqs);
-                cb();
-            });
+        raml.loadApi(file).then(function (raml) {
+            if (raml.RAMLVersion() == 'RAML10') {
+                getRamlRequestsToMock(raml, raml, '/', function(reqs) {
+                    requestsToMock = _.union(requestsToMock, reqs);
+                    cb();
+                });
+            }
+            else {
+                // Old RAMl 0.8 format
+                oldMocker.generate({
+                    files: [file]
+                }, function(requests) {
+                    requestsToMock = _.union(requestsToMock, reqs);
+                    cb();
+                });
+            }
+
         }, function (error) {
             cb('Error parsing: ' + error);
         });
@@ -78,7 +91,7 @@ function generateFromFiles(files, callback) {
 function getRamlRequestsToMock(definition, api, uri, callback) {
     var requestsToMock = [];
 
-    if (definition.relativeUri()) {
+    if (definition.relativeUri) {
         var nodeURI = definition.relativeUri().value();
         if (definition.uriParameters()) {
             _.each(definition.uriParameters(), function(uriParam, name) {
@@ -88,7 +101,7 @@ function getRamlRequestsToMock(definition, api, uri, callback) {
         uri = (uri + '/' + nodeURI).replace(/\/{2,}/g, '/');
     }
     var tasks = [];
-    if (definition.methods()) {
+    if (definition.methods) {
         tasks.push(function (cb) {
             getRamlRequestsToMockMethods(definition, api, uri, function(reqs) {
                 requestsToMock = _.union(requestsToMock, reqs);
@@ -96,7 +109,7 @@ function getRamlRequestsToMock(definition, api, uri, callback) {
             });
         });
     }
-    if (definition.resources()) {
+    if (definition.resources) {
         tasks.push(function (cb) {
             getRamlRequestsToMockResources(definition, api, uri, function(reqs) {
                 requestsToMock = _.union(requestsToMock, reqs);
@@ -123,7 +136,7 @@ function getRamlRequestsToMockMethods(definition, api, uri, callback) {
             _.each(responsesMethodByCode, function(reqDefinition) {
                 methodMocker.addResponse(reqDefinition.code, function() {
                     if (reqDefinition.schema || reqDefinition.body) {
-                        return schemaMocker(reqDefinition);
+                        return dataMocker(reqDefinition);
                     } else {
                         return null;
                     }
