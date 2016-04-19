@@ -172,13 +172,11 @@ var SchemaMocker = function () {
                     return randexp(property.pattern());
                 case !(property.enum().length):
                     return _.sample(property.enum());
-                case !(property.minLength() || property.maxLength()):
+                default:
                     var minLength = property.minLength() || 1;
                     var maxLength = property.maxLength() || (minLength < 50 ? 50 : minLength);
                     var strLen = _.random(minLength, maxLength);
                     return faker.lorem.words(strLen).substring(0, strLen).trim();
-                default:
-                    return '';
             }
         },
 
