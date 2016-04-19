@@ -71,4 +71,4 @@ var callback = function (requestsToMock){
 #### History Log
 
 ##### 0.0.1
-- Base project
+- Basic functional

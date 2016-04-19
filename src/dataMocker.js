@@ -165,18 +165,20 @@ var SchemaMocker = function () {
          * @param {TypeDeclarationImpl} property
          * @returns {string}
          * @private
-         *
-         * @todo enum
          */
         string: function (property) {
-            if (property.pattern()) {
-                return randexp(property.pattern());
-            }
-            else {
-                var minLength = property.minLength() || 1;
-                var maxLength = property.maxLength() || (minLength < 50 ? 50 : minLength);
-                var strLen = _.random(minLength, maxLength);
-                return faker.lorem.words(strLen).substring(0, strLen).trim();
+            switch (false) {
+                case !(property.pattern()):
+                    return randexp(property.pattern());
+                case !(property.enum().length):
+                    return _.random(property.enum());
+                case !(property.minLength() || property.maxLength()):
+                    var minLength = property.minLength() || 1;
+                    var maxLength = property.maxLength() || (minLength < 50 ? 50 : minLength);
+                    var strLen = _.random(minLength, maxLength);
+                    return faker.lorem.words(strLen).substring(0, strLen).trim();
+                default:
+                    return '';
             }
         },
 
