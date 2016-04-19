@@ -1,7 +1,6 @@
 'use strict';
 var _ = require('lodash');
 var faker = require('faker');
-var FormatMocker = require('./format');
 var randexp = require('randexp').randexp;
 
 var DataMocker = function (definition, formats) {
@@ -13,6 +12,9 @@ var DataMocker = function (definition, formats) {
 };
 
 var SchemaMocker = function () {
+    /**
+     * TODO: implement formats
+     */
     return {
         parse: function (def) {
             var mocks = [];
