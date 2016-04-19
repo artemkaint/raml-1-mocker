@@ -4,7 +4,7 @@ raml-1-mocker
 Node module to create mock API service based on RAML 1.0 definition.
 Forked from https://github.com/repocho/raml-mocker and remaked.
 
-Usin RAML 1.0 mock-service
+Using RAML 1.0 mock-service
 ---
 For single file ...
 ```javascript
