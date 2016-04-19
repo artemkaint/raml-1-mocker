@@ -186,7 +186,6 @@ var SchemaMocker = function () {
          * @param {TypeDeclarationImpl} property
          * @returns {null}
          *
-         * @todo enum
          * @todo format
          */
         number: function (property) {
@@ -199,7 +198,6 @@ var SchemaMocker = function () {
          * @param {TypeDeclarationImpl} property
          * @returns {null}
          *
-         * @todo enum
          * @todo format
          */
         integer: function (property) {
@@ -214,44 +212,46 @@ var SchemaMocker = function () {
          * @returns {null}
          * @private
          *
-         * @todo enum
          * @todo format
          */
         numberBase: function (property, floating) {
             var ret = null;
-            if (property.multipleOf()) {
-                var multipleMin = 1;
-                var multipleMax = 5;
+            switch (false) {
+                case !(property.enum().length):
+                    return _.sample(property.enum());
+                case !(property.multipleOf()):
+                    var multipleMin = 1;
+                    var multipleMax = 5;
 
-                if (property.maximum() !== undefined) {
-                    if ((property.maximum() === property.multipleOf()) || (property.maximum() > property.multipleOf())) {
-                        multipleMax = Math.floor(property.maximum() / property.multipleOf());
-                    } else {
-                        multipleMin = 0;
-                        multipleMax = 0;
+                    if (property.maximum() !== undefined) {
+                        if ((property.maximum() === property.multipleOf()) || (property.maximum() > property.multipleOf())) {
+                            multipleMax = Math.floor(property.maximum() / property.multipleOf());
+                        } else {
+                            multipleMin = 0;
+                            multipleMax = 0;
+                        }
                     }
-                }
-                ret = property.multipleOf() * _.random(multipleMin, multipleMax, floating);
-            } else {
-                var minimum = _.isNumber(property.minimum()) ? property.minimum() : -99999999999;
-                var maximum = _.isNumber(property.maximum()) ? property.maximum() : 99999999999;
-                var gap = maximum - minimum;
+                    return property.multipleOf() * _.random(multipleMin, multipleMax, floating);
+                default:
+                    var minimum = _.isNumber(property.minimum()) ? property.minimum() : -99999999999;
+                    var maximum = _.isNumber(property.maximum()) ? property.maximum() : 99999999999;
+                    var gap = maximum - minimum;
 
-                var minFloat = this._getMinFloat(minimum);
-                if (minFloat < this._getMinFloat(maximum)) {
-                    minFloat = this._getMinFloat(maximum);
-                }
-                var maxFloat = minFloat + _.random(0, 2);
-                var littleGap = this._toFloat(_.random(0, gap, floating), _.random(minFloat, maxFloat)) / 10;
-                ret = this._toFloat(_.random(minimum, maximum, floating), _.random(minFloat, maxFloat));
-                if (ret === property.maximum()) {
-                    ret -= littleGap;
-                }
-                if (ret === property.minimum()) {
-                    ret += littleGap;
-                }
+                    var minFloat = this._getMinFloat(minimum);
+                    if (minFloat < this._getMinFloat(maximum)) {
+                        minFloat = this._getMinFloat(maximum);
+                    }
+                    var maxFloat = minFloat + _.random(0, 2);
+                    var littleGap = this._toFloat(_.random(0, gap, floating), _.random(minFloat, maxFloat)) / 10;
+                    ret = this._toFloat(_.random(minimum, maximum, floating), _.random(minFloat, maxFloat));
+                    if (ret === property.maximum()) {
+                        ret -= littleGap;
+                    }
+                    if (ret === property.minimum()) {
+                        ret += littleGap;
+                    }
+                    return ret;
             }
-            return ret;
         },
 
         boolean: function (property) {
