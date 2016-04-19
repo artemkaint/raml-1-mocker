@@ -3,18 +3,14 @@ var _ = require('lodash');
 var faker = require('faker');
 var randexp = require('randexp').randexp;
 
-var DataMocker = function (definition, formats) {
-    var formatMocker = new FormatMocker(formats);
+module.exports = function (definition) {
     var mocker = new SchemaMocker();
-    mocker.formatMocker = formatMocker;
     mocker.types = definition.types;
     return mocker.mock(definition.body);
 };
 
 var SchemaMocker = function () {
-    /**
-     * TODO: implement formats
-     */
+
     return {
         parse: function (def) {
             var mocks = [];
@@ -57,12 +53,11 @@ var SchemaMocker = function () {
          * @param {TypeDeclarationImpl} property
          * @returns {null}
          *
-         * TODO:
-         * maxProperties
-         * minProperties
-         * required
-         * properties
-         * patternProperties
+         * @todo maxProperties
+         * @todo minProperties
+         * @todo required
+         * @todo properties
+         * @todo patternProperties
          */
         object: function (property) {
             var type = this.types[property.typeId()];
@@ -138,8 +133,7 @@ var SchemaMocker = function () {
          * @param {TypeDeclarationImpl} property
          * @returns {null}
          *
-         * TODO:
-         * items
+         * @todo items
          */
         array: function (property) {
             var mocks = [];
@@ -193,6 +187,7 @@ var SchemaMocker = function () {
          * @returns {null}
          *
          * @todo enum
+         * @todo format
          */
         number: function (property) {
             return this.numberBase(property, true);
@@ -205,6 +200,7 @@ var SchemaMocker = function () {
          * @returns {null}
          *
          * @todo enum
+         * @todo format
          */
         integer: function (property) {
             return this.numberBase(property, false);
@@ -291,5 +287,3 @@ var SchemaMocker = function () {
         }
     };
 };
-
-module.exports = DataMocker;

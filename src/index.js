@@ -8,20 +8,16 @@ var path = require('path'),
     RequestMocker = require('./requestMocker.js');
 
 function generate(options, callback) {
-    var formats = {};
     if (options) {
-        if (options.formats) {
-            formats = options.formats;
-        }
         if (!callback || !_.isFunction(callback)) {
             console.error('[RAML-MOCKER] You must define a callback function:\n');
             showUsage();
         }
         try {
             if (options.path) {
-                generateFromPath(options.path, formats, callback);
+                generateFromPath(options.path, callback);
             } else if (options.files && _.isArray(options.files)) {
-                generateFromFiles(options.files, formats, callback);
+                generateFromFiles(options.files, callback);
             }
         } catch (exception) {
             console.error('[RAML-MOCKER] A runtime error has ocurred:\n');
@@ -44,26 +40,26 @@ function showUsage() {
     console.log('--------------------------------------------------------------------');
 }
 
-function generateFromPath(filesPath, formats, callback) {
-    fs.readdir(filesPath, function (err, files) {
+function generateFromPath(filesPath, callback) {
+    fs.readdir(filesPath, function(err, files) {
         if (err) {
             throw err;
         }
         var filesToGenerate = [];
-        _.each(files, function (file) {
+        _.each(files, function(file) {
             if (file.substr(-5) === '.raml') {
                 filesToGenerate.push(path.join(filesPath, file));
             }
         });
-        generateFromFiles(filesToGenerate, formats, callback);
+        generateFromFiles(filesToGenerate, callback);
     });
 }
 
-function generateFromFiles(files, formats, callback) {
+function generateFromFiles(files, callback) {
     var requestsToMock = [];
-    async.each(files, function (file, cb) {
+    async.each(files, function(file, cb) {
         raml.loadApi(file).then(function (data) {
-            getRamlRequestsToMock(data, data, '/', formats, function (reqs) {
+            getRamlRequestsToMock(data, data, '/', function(reqs) {
                 requestsToMock = _.union(requestsToMock, reqs);
                 cb();
             });
@@ -79,30 +75,30 @@ function generateFromFiles(files, formats, callback) {
     });
 }
 
-function getRamlRequestsToMock(definition, api, uri, formats, callback) {
+function getRamlRequestsToMock(definition, api, uri, callback) {
     var requestsToMock = [];
 
-    if (definition.relativeUri) {
+    if (definition.relativeUri()) {
         var nodeURI = definition.relativeUri().value();
         if (definition.uriParameters()) {
-            _.each(definition.uriParameters(), function (uriParam, name) {
+            _.each(definition.uriParameters(), function(uriParam, name) {
                 nodeURI = nodeURI.replace('{' + name + '}', ':' + name);
             });
         }
         uri = (uri + '/' + nodeURI).replace(/\/{2,}/g, '/');
     }
     var tasks = [];
-    if (definition.methods) {
+    if (definition.methods()) {
         tasks.push(function (cb) {
-            getRamlRequestsToMockMethods(definition, api, uri, formats, function (reqs) {
+            getRamlRequestsToMockMethods(definition, api, uri, function(reqs) {
                 requestsToMock = _.union(requestsToMock, reqs);
                 cb();
             });
         });
     }
-    if (definition.resources) {
+    if (definition.resources()) {
         tasks.push(function (cb) {
-            getRamlRequestsToMockResources(definition, api, uri, formats, function (reqs) {
+            getRamlRequestsToMockResources(definition, api, uri, function(reqs) {
                 requestsToMock = _.union(requestsToMock, reqs);
                 cb();
             });
@@ -116,22 +112,22 @@ function getRamlRequestsToMock(definition, api, uri, formats, callback) {
     });
 }
 
-function getRamlRequestsToMockMethods(definition, api, uri, formats, callback) {
+function getRamlRequestsToMockMethods(definition, api, uri, callback) {
     var responsesByCode = [];
-    async.each(definition.methods(), function (method) {
+    async.each(definition.methods(), function(method) {
         if (method.method() && /get|post|put|delete/i.test(method.method()) && method.responses) {
             var responsesMethodByCode = getResponsesByCode(method.responses(), api);
             var methodMocker = new RequestMocker(uri, method.method());
 
             var currentMockDefaultCode = null;
-            _.each(responsesMethodByCode, function (reqDefinition) {
-                methodMocker.addResponse(reqDefinition.code, function () {
+            _.each(responsesMethodByCode, function(reqDefinition) {
+                methodMocker.addResponse(reqDefinition.code, function() {
                     if (reqDefinition.schema || reqDefinition.body) {
-                        return schemaMocker(reqDefinition, formats);
+                        return schemaMocker(reqDefinition);
                     } else {
                         return null;
                     }
-                }, function () {
+                }, function() {
                     return reqDefinition.example;
                 });
                 if ((!currentMockDefaultCode || currentMockDefaultCode > reqDefinition.code) && /^2\d\d$/.test(reqDefinition.code)) {
@@ -180,10 +176,12 @@ function getResponsesByCode(responses, api) {
         }
     };
 
-    _.each(responses, function (response) {
-        if (!response) return;
+    _.each(responses, function(response) {
+        if (!response) {
+            return false;
+        }
         var code = response.code() && response.code().value();
-        _.each(response.body(), function (body) {
+        _.each(response.body(), function(body) {
             if (!_.isNaN(Number(code)) && body) {
                 code = Number(code);
 
@@ -201,10 +199,10 @@ function getResponsesByCode(responses, api) {
     return responsesByCode;
 }
 
-function getRamlRequestsToMockResources(definition, api, uri, formats, callback) {
+function getRamlRequestsToMockResources(definition, api, uri, callback) {
     var requestsToMock = [];
-    async.each(definition.resources(), function (def, cb) {
-        getRamlRequestsToMock(def, api, uri, formats, function (reqs) {
+    async.each(definition.resources(), function(def, cb) {
+        getRamlRequestsToMock(def, api, uri, function(reqs) {
             requestsToMock = _.union(requestsToMock, reqs);
             cb(null);
         });
