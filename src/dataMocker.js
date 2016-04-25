@@ -12,7 +12,7 @@ module.exports = function (definition) {
 var SchemaMocker = function () {
 
     return {
-        parse: function (def) {
+        parse: function (def, discriminatorValue) {
             var mocks = [];
             var pushMock = function (mock) {
                 if (mock) {
@@ -26,17 +26,17 @@ var SchemaMocker = function () {
             };
             switch (false) {
                 case !def.isUnion():
-                    pushMock(this.parse(def.leftType()));
-                    pushMock(this.parse(def.rightType()));
+                    pushMock(this.parse(def.leftType(), discriminatorValue));
+                    pushMock(this.parse(def.rightType(), discriminatorValue));
                     return _.sample(mocks);
                 case !def.isArray():
                     var superTypes = def.superTypes();
                     if (superTypes) {
-                        pushMock(this.array(superTypes[0]));
+                        pushMock(this.array(superTypes[0], discriminatorValue));
                     }
                     break;
                 case !def.hasStructure():
-                    pushMock(this.object(def));
+                    pushMock(this.object(def, discriminatorValue));
                     break;
             }
             return mocks;
@@ -59,7 +59,7 @@ var SchemaMocker = function () {
          * @todo properties
          * @todo patternProperties
          */
-        object: function (property) {
+        object: function (property, discriminatorValue) {
             var type = this.types[property.typeId()];
             var mocker = this;
             var mocks = [];
@@ -75,11 +75,12 @@ var SchemaMocker = function () {
                 };
 
                 var runtimeParse = function (type, mock) {
+                    discriminatorValue = type.discriminatorValue();
                     mock || (mock = {});
                     var runtimeType = type.runtimeType();
                     if (runtimeType) {
                         _.each(runtimeType.superTypes(), function (superType) {
-                            _.each(mocker.parse(superType), function (parentMock) {
+                            _.each(mocker.parse(superType, discriminatorValue), function (parentMock) {
                                 mock = _.extend({}, mock, parentMock);
                             })
                         });
@@ -92,6 +93,8 @@ var SchemaMocker = function () {
                     _.each(type.properties(), function (property) {
                         var getPropValue = function (property) {
                             switch (false) {
+                                case !(property.name() == type.discriminator()):
+                                    return discriminatorValue;
                                 case !getCustomPropertyType(property):
                                     return getPropValue(getCustomPropertyType(property));
                                 case !(property.kind() == 'NumberTypeDeclaration'):
@@ -122,7 +125,7 @@ var SchemaMocker = function () {
                     });
                     return obj;
                 };
-                return runtimeParse(type, fillProperties(type));
+                return runtimeParse(type, fillProperties(type, discriminatorValue));
             }
             return mocks;
         },
@@ -135,7 +138,7 @@ var SchemaMocker = function () {
          *
          * @todo items
          */
-        array: function (property) {
+        array: function (property, discriminatorValue) {
             var mocks = [];
             var mocker = this;
             var type = this.types[property.typeId()];
