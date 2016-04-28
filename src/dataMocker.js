@@ -74,8 +74,11 @@ var SchemaMocker = function () {
                     return customType.length ? customType[0] : null;
                 };
 
-                var runtimeParse = function (type, mock) {
-                    discriminatorValue = type.discriminatorValue();
+                var runtimeParse = function (type, mock, discriminatorValue) {
+                    // if value of discriminator is not defined we get it from current type
+                    if (!discriminatorValue) {
+                        discriminatorValue = type.discriminatorValue();
+                    }
                     mock || (mock = {});
                     var runtimeType = type.runtimeType();
                     if (runtimeType) {
@@ -125,7 +128,7 @@ var SchemaMocker = function () {
                     });
                     return obj;
                 };
-                return runtimeParse(type, fillProperties(type, discriminatorValue));
+                return runtimeParse(type, fillProperties(type, discriminatorValue), discriminatorValue);
             }
             return mocks;
         },
