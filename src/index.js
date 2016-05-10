@@ -95,7 +95,7 @@ function getRamlRequestsToMock(definition, api, uri, callback) {
         var nodeURI = definition.relativeUri().value();
         if (definition.uriParameters()) {
             _.each(definition.uriParameters(), function(uriParam, name) {
-                nodeURI = nodeURI.replace('{' + name + '}', ':' + name);
+                nodeURI = nodeURI.replace('{' + uriParam.name() + '}', ':' + uriParam.name());
             });
         }
         uri = (uri + '/' + nodeURI).replace(/\/{2,}/g, '/');
