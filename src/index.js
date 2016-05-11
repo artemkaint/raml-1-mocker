@@ -61,7 +61,7 @@ function generateFromFiles(files, callback) {
     async.each(files, function(file, cb) {
         raml.loadApi(file).then(function (raml) {
             if (raml.RAMLVersion() == 'RAML10') {
-                getRamlRequestsToMock(raml, raml, '/', function(reqs) {
+                getRamlRequestsToMock(raml, raml, '', function(reqs) {
                     requestsToMock = _.union(requestsToMock, reqs);
                     cb();
                 });
@@ -92,32 +92,58 @@ function getRamlRequestsToMock(definition, api, uri, callback) {
     var requestsToMock = [];
 
     if (definition.relativeUri && definition.relativeUri()) {
-        var nodeURI = definition.relativeUri().value();
+        var nodeUri = definition.relativeUri().value();
+        var prepareRegexpUri = function(uriStr, regexpStr, searchStr) {
+            var prepareRegexpString = function(str, regexpStr, escaping, needRegexp) {
+                var replaceRegexp = function(str, escaping) {
+                    return escaping ? str.replace(/([\^\[\.\$\*\(\\\/\+\)\|\?])/g, '\\$1') : str;
+                };
+                var paramStartPos = uriStr.indexOf(searchStr);
+                paramStartPos = paramStartPos > -1 ? paramStartPos : uriStr.length;
+                var retStr = [
+                    replaceRegexp(uriStr.substring(0, paramStartPos), escaping),
+                    _.isRegExp(regexpStr) ? regexpStr.toString().substr(1, regexpStr.toString().length - 2) : regexpStr,
+                    replaceRegexp(uriStr.substring(paramStartPos + (searchStr ? searchStr.length : 0)), escaping)
+                ].join('');
+                return needRegexp ? new RegExp(retStr) : retStr;
+            };
+
+            switch (false) {
+                case !(_.isRegExp(uriStr)):
+                    uri = uri.toString().substr(1, uriStr.toString().length - 2);
+                    return prepareRegexpString(uriStr, regexpStr, false, true);
+                case !(_.isRegExp(regexpStr)):
+                    return prepareRegexpString(uriStr, regexpStr, true, true);
+                default:
+                    return prepareRegexpString(uriStr, regexpStr, false, false);
+            }
+        };
+
         if (definition.uriParameters()) {
-            var modifyUri = function(nodeUri, uriParam) {
+            var modifyUri = function(uritoModify, uriParam) {
+                var fullParam = '{' + uriParam.name() + '}';
                 switch (false) {
                     // TODO: Implements custom types
                     case !(uriParam.kind() == 'IntegerTypeDeclaration'):
-                        return nodeURI.replace('{' + uriParam.name() + '}', ':' + uriParam.name());
+                        // TODO: Implements value limits                        
+                        return prepareRegexpUri(uritoModify, /\d+/, fullParam);
                     case !(uriParam.kind() == 'StringTypeDeclaration'):
                         // TODO: Implements min & max Length
                         if (uriParam.pattern()) {
-                            if (_.isRegExp(uriParam)) {
-
-                            } else {
-
-                            }
+                            // Remove first & end slashes
+                            var pattern = uriParam.pattern().replace(/^\//, '').replace(/\/$/, '');
+                            return prepareRegexpUri(uritoModify, new RegExp(pattern), fullParam);
                         }
-                        return;
+                        return uritoModify.replace(fullParam, ':' + uriParam.name());
                     default:
-                        return nodeURI.replace('{' + uriParam.name() + '}', ':' + uriParam.name());
+                        return uritoModify.replace(fullParam, ':' + uriParam.name());
                 }
             };
             _.each(definition.uriParameters(), function(uriParam) {
-                nodeURI = modifyUri(nodeURI, uriParam);
+                nodeUri = modifyUri(nodeUri, uriParam);
             });
         }
-        uri = (uri + '/' + nodeURI).replace(/\/{2,}/g, '/');
+        uri = prepareRegexpUri(uri, nodeUri);
     }
     var tasks = [];
     if (definition.methods && definition.methods()) {
