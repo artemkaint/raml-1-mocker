@@ -91,7 +91,7 @@ function generateFromFiles(files, callback) {
 function getRamlRequestsToMock(definition, api, uri, callback) {
     var requestsToMock = [];
 
-    if (definition.relativeUri) {
+    if (definition.relativeUri && definition.relativeUri()) {
         var nodeURI = definition.relativeUri().value();
         if (definition.uriParameters()) {
             _.each(definition.uriParameters(), function(uriParam, name) {
@@ -101,7 +101,7 @@ function getRamlRequestsToMock(definition, api, uri, callback) {
         uri = (uri + '/' + nodeURI).replace(/\/{2,}/g, '/');
     }
     var tasks = [];
-    if (definition.methods) {
+    if (definition.methods && definition.methods()) {
         tasks.push(function (cb) {
             getRamlRequestsToMockMethods(definition, api, uri, function(reqs) {
                 requestsToMock = _.union(requestsToMock, reqs);
@@ -109,7 +109,7 @@ function getRamlRequestsToMock(definition, api, uri, callback) {
             });
         });
     }
-    if (definition.resources) {
+    if (definition.resources && definition.resources()) {
         tasks.push(function (cb) {
             getRamlRequestsToMockResources(definition, api, uri, function(reqs) {
                 requestsToMock = _.union(requestsToMock, reqs);
@@ -128,7 +128,7 @@ function getRamlRequestsToMock(definition, api, uri, callback) {
 function getRamlRequestsToMockMethods(definition, api, uri, callback) {
     var responsesByCode = [];
     async.each(definition.methods(), function(method) {
-        if (method.method() && /get|post|put|delete/i.test(method.method()) && method.responses) {
+        if (method.method() && /get|post|put|delete/i.test(method.method()) && method.responses()) {
             var responsesMethodByCode = getResponsesByCode(method.responses(), api);
             var methodMocker = new RequestMocker(uri, method.method());
 
@@ -162,7 +162,7 @@ function getResponsesByCode(responses, api) {
     var responsesByCode = [];
 
     var typeByName = _.zipObject(_.map(api.types(), function(item) {
-       return item.name();
+        return item.name();
     }), api.types());
 
     var parseExample = function (body, code, example) {
@@ -199,11 +199,11 @@ function getResponsesByCode(responses, api) {
                 code = Number(code);
 
                 if (body.example()) {
-                    parseExample(body, code, body.example());
+                    parseExample(body, code, body.example().value());
                 }
                 else if (body.examples()) {
                     _.each(body.examples(), function (example) {
-                        parseExample(body, code, example.content());
+                        parseExample(body, code, example.value());
                     });
                 }
             }
