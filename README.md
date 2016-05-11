@@ -66,6 +66,7 @@ var callback = function (requestsToMock){
 [lodash]:https://www.npmjs.org/package/lodash
 [faker]:https://github.com/Marak/Faker.js
 [raml-js-parser-2]:https://github.com/raml-org/raml-js-parser-2
+[raml-mocker]:https://github.com/repocho/raml-mocker
 
 
 #### History Log
