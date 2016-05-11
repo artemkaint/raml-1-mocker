@@ -94,8 +94,27 @@ function getRamlRequestsToMock(definition, api, uri, callback) {
     if (definition.relativeUri && definition.relativeUri()) {
         var nodeURI = definition.relativeUri().value();
         if (definition.uriParameters()) {
-            _.each(definition.uriParameters(), function(uriParam, name) {
-                nodeURI = nodeURI.replace('{' + uriParam.name() + '}', ':' + uriParam.name());
+            var modifyUri = function(nodeUri, uriParam) {
+                switch (false) {
+                    // TODO: Implements custom types
+                    case !(uriParam.kind() == 'IntegerTypeDeclaration'):
+                        return nodeURI.replace('{' + uriParam.name() + '}', ':' + uriParam.name());
+                    case !(uriParam.kind() == 'StringTypeDeclaration'):
+                        // TODO: Implements min & max Length
+                        if (uriParam.pattern()) {
+                            if (_.isRegExp(uriParam)) {
+
+                            } else {
+
+                            }
+                        }
+                        return;
+                    default:
+                        return nodeURI.replace('{' + uriParam.name() + '}', ':' + uriParam.name());
+                }
+            };
+            _.each(definition.uriParameters(), function(uriParam) {
+                nodeURI = modifyUri(nodeURI, uriParam);
             });
         }
         uri = (uri + '/' + nodeURI).replace(/\/{2,}/g, '/');
