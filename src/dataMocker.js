@@ -174,7 +174,7 @@ var SchemaMocker = function () {
         string: function (property) {
             switch (false) {
                 case !(property.pattern()):
-                    return randexp(property.pattern());
+                    return randexp(property.pattern().substr(1, property.pattern().toString().length - 2));
                 case !(property.enum().length):
                     return _.sample(property.enum());
                 default:
