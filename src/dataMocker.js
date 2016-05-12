@@ -14,31 +14,20 @@ var SchemaMocker = function () {
     return {
         parse: function (def, discriminatorValue) {
             var mocks = [];
-            var pushMock = function (mock) {
-                if (mock) {
-                    if (_.isArray(mock)) {
-                        mocks = [].concat(mocks, mock);
-                    }
-                    else {
-                        mocks.push(mock);
-                    }
-                }
-            };
             switch (false) {
                 case !def.isUnion():
-                    pushMock(this.parse(def.leftType(), discriminatorValue));
-                    pushMock(this.parse(def.rightType(), discriminatorValue));
+                    mocks = this._magicPush(this.parse(def.leftType(), discriminatorValue), mocks);
+                    mocks = this._magicPush(this.parse(def.rightType(), discriminatorValue), mocks);
                     return _.sample(mocks);
                 case !def.isArray():
                     var superTypes = def.superTypes();
                     if (superTypes) {
-                        pushMock(this.array(superTypes[0], discriminatorValue));
+                        mocks = this._magicPush(this.array(superTypes[0], discriminatorValue), mocks);
                     }
                     break;
                 case !def.hasStructure():
-                    pushMock(this.object(def, discriminatorValue));
+                    mocks = this._magicPush(this.object(def, discriminatorValue), mocks);
                     return _.sample(mocks);
-                    break;
             }
             return mocks;
         },
@@ -59,77 +48,90 @@ var SchemaMocker = function () {
          * @todo properties
          * @todo patternProperties
          */
-        object: function (property, discriminatorValue) {
-            var type = this.types[property.typeId()];
+        object: function (definition, discriminatorValue) {
             var mocker = this;
-            if (type) {
-                var getCustomPropertyType = function (property) {
-                    var customType = _.filter(_.map(property.type(), function (type) {
-                        return mocker.types[type];
-                    }), function (type) {
-                        return !!type;
-                    });
-                    // TODO: there is only one type support today
-                    return customType.length ? customType[0] : null;
-                };
 
-                var runtimeParse = function (type, mock, discriminatorValue) {
-                    // if value of discriminator is not defined we get it from current type
-                    if (!discriminatorValue) {
-                        discriminatorValue = type.discriminatorValue();
-                    }
-                    mock || (mock = {});
-                    var runtimeType = type.runtimeType();
-                    if (runtimeType) {
-                        _.each(runtimeType.superTypes(), function (superType) {
-                            _.each(mocker.parse(superType, discriminatorValue), function (parentMock) {
-                                mock = _.extend({}, mock, parentMock);
-                            })
+            var getMockForType = function(property) {
+                var type = mocker.types[property.typeId()];
+                if (type) {
+                    var getCustomPropertyType = function (property) {
+                        var customType = _.filter(_.map(property.type(), function (type) {
+                            return mocker.types[type];
+                        }), function (type) {
+                            return !!type;
                         });
-                    }
-                    return mock;
-                };
+                        // TODO: there is only one type support today
+                        return customType.length ? customType[0] : null;
+                    };
 
-                var fillProperties = function (type) {
-                    var obj = {};
-                    _.each(type.properties(), function (property) {
-                        var getPropValue = function (property) {
-                            switch (false) {
-                                case !(property.name() == type.discriminator()):
-                                    return discriminatorValue;
-                                case !getCustomPropertyType(property):
-                                    return getPropValue(getCustomPropertyType(property));
-                                case !(property.kind() == 'NumberTypeDeclaration'):
-                                    return mocker.number(property);
-                                case !(property.kind() == 'IntegerTypeDeclaration'):
-                                    return mocker.integer(property);
-                                case !(property.kind() == 'StringTypeDeclaration'):
-                                    return mocker.string(property);
-                                case !(property.kind() == 'BooleanTypeDeclaration'):
-                                    return mocker.boolean(property);
-                                case !(property.kind() == 'ObjectTypeDeclaration'):
-                                    var runtimeType = property.runtimeType();
-                                    var mock = {};
-                                    _.each(mocker.parse(runtimeType), function (currentMock) {
-                                        mock = _.extend({}, mock, currentMock);
-                                    });
-                                    return runtimeParse(property, mock);
-                                case !(property.examples() && property.examples().length):
-                                    return _.sample(property.example());
-                                default:
-                                    return property.example();
-                            }
-                        };
-                        var getPropName = function (property) {
-                            return property.name();
-                        };
-                        obj[getPropName(property)] = getPropValue(property);
-                    });
-                    return obj;
-                };
-                return runtimeParse(type, fillProperties(type, discriminatorValue), discriminatorValue);
+                    var runtimeParse = function (type, mock, discriminatorValue) {
+                        // if value of discriminator is not defined we get it from current type
+                        if (!discriminatorValue) {
+                            discriminatorValue = type.discriminatorValue();
+                        }
+                        mock || (mock = {});
+                        var runtimeType = type.runtimeType();
+                        if (runtimeType) {
+                            _.each(runtimeType.superTypes(), function (superType) {
+                                var stMock = mocker.parse(superType, discriminatorValue);
+                                _.each(_.isArray(stMock) ? stMock : [stMock], function (parentMock) {
+                                    mock = _.extend({}, mock, parentMock);
+                                })
+                            });
+                        }
+                        return mock;
+                    };
+
+                    var fillProperties = function (type) {
+                        var obj = {};
+                        _.each(type.properties(), function (property) {
+                            var getPropValue = function (property) {
+                                switch (false) {
+                                    case !(property.name() == type.discriminator()):
+                                        return discriminatorValue;
+                                    case !getCustomPropertyType(property):
+                                        return getPropValue(getCustomPropertyType(property));
+                                    case !(property.kind() == 'NumberTypeDeclaration'):
+                                        return mocker.number(property);
+                                    case !(property.kind() == 'IntegerTypeDeclaration'):
+                                        return mocker.integer(property);
+                                    case !(property.kind() == 'StringTypeDeclaration'):
+                                        return mocker.string(property);
+                                    case !(property.kind() == 'BooleanTypeDeclaration'):
+                                        return mocker.boolean(property);
+                                    case !(property.kind() == 'ObjectTypeDeclaration'):
+                                        var runtimeType = property.runtimeType();
+                                        var mock = {};
+                                        var stMock = mocker.parse(runtimeType);
+                                        _.each(_.isArray(stMock) ? stMock : [stMock], function (currentMock) {
+                                            mock = _.extend({}, mock, currentMock);
+                                        });
+                                        return runtimeParse(property, mock);
+                                    case !(property.examples() && property.examples().length):
+                                        return _.sample(property.example());
+                                    default:
+                                        return property.example();
+                                }
+                            };
+                            var getPropName = function (property) {
+                                return property.name();
+                            };
+                            obj[getPropName(property)] = getPropValue(property);
+                        });
+                        return obj;
+                    };
+                    return runtimeParse(type, fillProperties(type, discriminatorValue), discriminatorValue);
+                }
+                return {};
             }
-            return {};
+
+            var mock = {};
+            if (definition.superTypes) {
+                _.each(definition.superTypes(), function(superType) {
+                    mock = _.extend({}, mock, getMockForType(superType));
+                });
+            }
+            return _.extend({}, mock, getMockForType(definition));
         },
 
         /**
@@ -148,14 +150,12 @@ var SchemaMocker = function () {
                 return mocks;
             }
 
-            var maxItems = type.maxItems() || 10;
+            var maxItems = type.maxItems() === null || _.isNaN(parseInt(type.maxItems(), 10)) ? 10 : type.maxItems();
             var minItems = type.minItems() || 0;
             var unique = type.uniqueItems() || false;
 
-            this.parse(property.componentType());
-
             _.times(_.random(minItems, maxItems), function () {
-                mocks.push(mocker.parse(property.componentType()));
+                mocks = mocker._magicPush(mocker.parse(property.componentType()), mocks);
             });
 
             if (unique) {
@@ -289,6 +289,23 @@ var SchemaMocker = function () {
         _getMinFloat: function (num) {
             var ret = /\.(0*)\d*$/.exec(num);
             return ret ? ret[1].length + 1 : 1;
+        },
+
+        /**
+         * Magic push to array or merge arrays
+         * @param el {*[]|*}
+         * @param arr {*[]}
+         */
+        _magicPush: function (el, arr) {
+            if (el) {
+                if (_.isArray(el)) {
+                    arr = [].concat(arr, el);
+                }
+                else {
+                    arr.push(el);
+                }
+            }
+            return arr
         }
     };
 };

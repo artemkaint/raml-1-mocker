@@ -29,8 +29,8 @@ The result of execution:
 ```javascript
 [
     {
-        /** URI of the request to mock */
-        uri: '/test/:id/objectDef',
+        /** URI of the request to mock {string|RegExp}*/
+        uri: '/test/:id/objectDef', // or RegExp: /\/test\/\d+/
         /** Method of the request (get, post, ...) */
         method: 'get',
         /** Function by default to return the mock (codes 2XX defined in the RAML). */
