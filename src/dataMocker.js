@@ -37,21 +37,21 @@ var SchemaMocker = function () {
                     break;
                 case !def.hasStructure():
                     pushMock(this.object(def, discriminatorValue));
+                    return _.sample(mocks);
                     break;
             }
             return mocks;
         },
 
         mock: function (definition) {
-            var runtimeDefinition = definition.runtimeDefinition();
-            return this.parse(runtimeDefinition);
+            return this.parse(definition.runtimeDefinition());
         },
 
         /**
          * Function for generate object mock value
          *
          * @param {TypeDeclarationImpl} property
-         * @returns {null}
+         * @returns {object}
          *
          * @todo maxProperties
          * @todo minProperties
@@ -62,7 +62,6 @@ var SchemaMocker = function () {
         object: function (property, discriminatorValue) {
             var type = this.types[property.typeId()];
             var mocker = this;
-            var mocks = [];
             if (type) {
                 var getCustomPropertyType = function (property) {
                     var customType = _.filter(_.map(property.type(), function (type) {
@@ -130,7 +129,7 @@ var SchemaMocker = function () {
                 };
                 return runtimeParse(type, fillProperties(type, discriminatorValue), discriminatorValue);
             }
-            return mocks;
+            return {};
         },
 
         /**
