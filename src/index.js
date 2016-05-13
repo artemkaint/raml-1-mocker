@@ -176,7 +176,6 @@ function getRamlRequestsToMockMethods(definition, api, uri, callback) {
         if (method.method() && /get|post|put|delete/i.test(method.method()) && method.responses()) {
             var responsesMethodByCode = getResponsesByCode(method.responses(), api);
             var methodMocker = new RequestMocker(uri, method.method());
-            console.log('index.js:179', method.responses());
 
             var currentMockDefaultCode = null;
             _.each(responsesMethodByCode, function(reqDefinition) {
