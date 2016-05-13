@@ -246,7 +246,7 @@ function getResponsesByCode(responses, api) {
                 if (body.example()) {
                     parseExample(body, code, body.example().value());
                 }
-                else if (body.examples()) {
+                else if (body.examples() && body.examples().length) {
                     _.each(body.examples(), function (example) {
                         parseExample(body, code, example.value());
                     });
