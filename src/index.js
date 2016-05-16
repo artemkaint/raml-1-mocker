@@ -110,7 +110,7 @@ function getRamlRequestsToMock(definition, api, uri, callback) {
 
             switch (false) {
                 case !(_.isRegExp(uriStr)):
-                    uri = uri.toString().substr(1, uriStr.toString().length - 2);
+                    uriStr = uriStr.toString().substr(1, uriStr.toString().length - 2);
                     return prepareRegexpString(uriStr, regexpStr, false, true);
                 case !(_.isRegExp(regexpStr)):
                     return prepareRegexpString(uriStr, regexpStr, true, true);
