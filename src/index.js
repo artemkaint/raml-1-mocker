@@ -179,15 +179,17 @@ function getRamlRequestsToMockMethods(definition, api, uri, callback) {
 
             var currentMockDefaultCode = null;
             _.each(responsesMethodByCode, function(reqDefinition) {
-                methodMocker.addResponse(reqDefinition.code, function() {
-                    if (reqDefinition.schema || reqDefinition.body) {
-                        return dataMocker(reqDefinition);
-                    } else {
-                        return null;
-                    }
-                }, function() {
-                    return reqDefinition.example;
-                });
+                (function(reqDef) {
+                    methodMocker.addResponse(reqDef.code, function() {
+                        if (reqDef.schema || reqDef.body) {
+                            return dataMocker(reqDef);
+                        } else {
+                            return null;
+                        }
+                    }, function() {
+                        return reqDef.example;
+                    });
+                })(reqDefinition);
                 if ((!currentMockDefaultCode || currentMockDefaultCode > reqDefinition.code) && /^2\d\d$/.test(reqDefinition.code)) {
                     methodMocker.mock = methodMocker.getResponses()[reqDefinition.code];
                     methodMocker.example = methodMocker.getExamples()[reqDefinition.code];
