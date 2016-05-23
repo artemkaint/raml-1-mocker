@@ -33,9 +33,7 @@ var SchemaMocker = function () {
         },
 
         mock: function (definition) {
-            var ret = this.parse(definition.runtimeDefinition());
-            console.log('dataMocker.js:37', this.types);
-            return ret;
+            return this.parse(definition.runtimeDefinition());
         },
 
         /**
