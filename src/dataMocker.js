@@ -67,7 +67,7 @@ var SchemaMocker = function () {
                     var runtimeParse = function (type, mock, discriminatorValue) {
                         // if value of discriminator is not defined we get it from current type
                         if (!discriminatorValue) {
-                            discriminatorValue = type.discriminatorValue();
+                            discriminatorValue = type.discriminatorValue ? type.discriminatorValue() : null;
                         }
                         var retMock = mock ? mock : {};
                         var runtimeType = type.runtimeType();
@@ -84,40 +84,42 @@ var SchemaMocker = function () {
 
                     var fillProperties = function (type) {
                         var obj = {};
-                        _.each(type.properties(), function (property) {
-                            var getPropValue = function (prop) {
-                                switch (false) {
-                                    case !(prop.name() == type.discriminator()):
-                                        return discriminatorValue;
-                                    case !getCustomPropertyType(prop):
-                                        return getPropValue(getCustomPropertyType(prop));
-                                    case !(prop.kind() == 'NumberTypeDeclaration'):
-                                        return mocker.number(prop);
-                                    case !(prop.kind() == 'IntegerTypeDeclaration'):
-                                        return mocker.integer(prop);
-                                    case !(prop.kind() == 'StringTypeDeclaration'):
-                                        return mocker.string(prop);
-                                    case !(prop.kind() == 'BooleanTypeDeclaration'):
-                                        return mocker.boolean(prop);
-                                    case !(prop.kind() == 'ObjectTypeDeclaration'):
-                                        var runtimeType = prop.runtimeType();
-                                        var mockObj = {};
-                                        var stMock = mocker.parse(runtimeType);
-                                        _.each(_.isArray(stMock) ? stMock : [stMock], function (currentMock) {
-                                            mockObj = _.extend({}, mockObj, currentMock);
-                                        });
-                                        return runtimeParse(prop, mockObj);
-                                    case !(prop.examples() && prop.examples().length):
-                                        return _.sample(prop.example());
-                                    default:
-                                        return prop.example();
-                                }
-                            };
-                            var getPropName = function (prop) {
-                                return prop.name();
-                            };
-                            obj[getPropName(property)] = getPropValue(property);
-                        });
+                        if (type.properties) {
+                            _.each(type.properties(), function (property) {
+                                var getPropValue = function (prop) {
+                                    switch (false) {
+                                        case !(prop.name() == type.discriminator()):
+                                            return discriminatorValue;
+                                        case !getCustomPropertyType(prop):
+                                            return getPropValue(getCustomPropertyType(prop));
+                                        case !(prop.kind() == 'NumberTypeDeclaration'):
+                                            return mocker.number(prop);
+                                        case !(prop.kind() == 'IntegerTypeDeclaration'):
+                                            return mocker.integer(prop);
+                                        case !(prop.kind() == 'StringTypeDeclaration'):
+                                            return mocker.string(prop);
+                                        case !(prop.kind() == 'BooleanTypeDeclaration'):
+                                            return mocker.boolean(prop);
+                                        case !(prop.kind() == 'ObjectTypeDeclaration'):
+                                            var runtimeType = prop.runtimeType();
+                                            var mockObj = {};
+                                            var stMock = mocker.parse(runtimeType);
+                                            _.each(_.isArray(stMock) ? stMock : [stMock], function (currentMock) {
+                                                mockObj = _.extend({}, mockObj, currentMock);
+                                            });
+                                            return runtimeParse(prop, mockObj);
+                                        case !(prop.examples() && prop.examples().length):
+                                            return _.sample(prop.example());
+                                        default:
+                                            return prop.example();
+                                    }
+                                };
+                                var getPropName = function (prop) {
+                                    return prop.name();
+                                };
+                                obj[getPropName(property)] = getPropValue(property);
+                            });
+                        }
                         return obj;
                     };
                     return runtimeParse(type, fillProperties(type, discriminatorValue), discriminatorValue);
@@ -128,7 +130,7 @@ var SchemaMocker = function () {
             var mock = {};
             if (definition.superTypes) {
                 _.each(definition.superTypes(), function(superType) {
-                    mock = _.extend({}, mock, getMockForType(superType));
+                    mock = _.extend({}, mock, mocker.parse(superType));
                 });
             }
             return _.extend({}, mock, getMockForType(definition));
