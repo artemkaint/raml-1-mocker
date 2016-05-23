@@ -14,6 +14,7 @@ var SchemaMocker = function () {
     return {
         parse: function (def, discriminatorValue) {
             var mocks = [];
+            var mocker = this;
             switch (false) {
                 case !def.isUnion():
                     mocks = this._magicPush(this.parse(def.leftType(), discriminatorValue), mocks);
@@ -22,12 +23,41 @@ var SchemaMocker = function () {
                 case !def.isArray():
                     var superTypes = def.superTypes();
                     if (superTypes) {
-                        mocks = this._magicPush(this.array(superTypes[0], discriminatorValue), mocks);
+                        var definition = superTypes[0];
+                        var type = this.types[definition.typeId()];
+                        mocks = this._magicPush(this.array(definition, type, discriminatorValue), mocks);
                     }
                     break;
                 case !def.hasStructure():
                     mocks = this._magicPush(this.object(def, discriminatorValue), mocks);
                     return _.sample(mocks);
+                case !def.isValueType():
+                    var valueType = this.types[def.typeId()];
+                    // TODO Mix with props declaration
+                    switch (false) {
+                        case !!valueType:
+                            return null;
+                        case !(valueType.kind() == 'NumberTypeDeclaration'):
+                            return mocker.number(valueType);
+                        case !(valueType.kind() == 'IntegerTypeDeclaration'):
+                            return mocker.integer(valueType);
+                        case !(valueType.kind() == 'StringTypeDeclaration'):
+                            return mocker.string(valueType);
+                        case !(valueType.kind() == 'BooleanTypeDeclaration'):
+                            return mocker.boolean(valueType);
+                        case !(valueType.kind() == 'ObjectTypeDeclaration'):
+                            // TODO: Mix with def.isArray()
+                            return {}
+                        case !(valueType.kind() == 'ArrayTypeDeclaration'):
+                            // TODO: Mix with def.hasStructure()
+                            return [];
+                        case !(valueType.examples && valueType.examples() && valueType.examples().length):
+                            return _.sample(valueType.examples());
+                        case !(valueType.example && valueType.example()):
+                            return valueType.example();
+                        default:
+                            return null;
+                    }
             }
             return mocks;
         },
@@ -108,6 +138,8 @@ var SchemaMocker = function () {
                                                 mockObj = _.extend({}, mockObj, currentMock);
                                             });
                                             return runtimeParse(prop, mockObj);
+                                        case !(prop.kind() == 'ArrayTypeDeclaration'):
+                                            return mocker.array(prop.runtimeType(), prop);
                                         case !(prop.examples() && prop.examples().length):
                                             return _.sample(prop.example());
                                         default:
@@ -144,17 +176,25 @@ var SchemaMocker = function () {
          *
          * @todo items
          */
-        array: function (property, discriminatorValue) {
+        array: function (property, type, discriminatorValue) {
             var mocks = [];
             var mocker = this;
-            var type = this.types[property.typeId()];
             if (!type) {
                 return mocks;
             }
 
-            var maxItems = type.maxItems() === null || _.isNaN(parseInt(type.maxItems(), 10)) ? 10 : type.maxItems();
-            var minItems = type.minItems() || 0;
-            var unique = type.uniqueItems() || false;
+            var maxItems = 10;
+            if (type.maxItems && type.maxItems() !== null && !_.isNaN(parseInt(type.maxItems(), 10))) {
+                maxItems = type.maxItems();
+            }
+            var minItems = 0;
+            if (type.minItems && type.minItems()) {
+                minItems = type.minItems()
+            };
+            var unique = false;
+            if (type.uniqueItems && type.uniqueItems()) {
+                unique = type.uniqueItems()
+            };
 
             _.times(_.random(minItems, maxItems), function () {
                 mocks = mocker._magicPush(mocker.parse(property.componentType()), mocks);
