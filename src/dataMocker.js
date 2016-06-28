@@ -282,22 +282,13 @@ var SchemaMocker = function () {
                 default:
                     var minimum = _.isNumber(property.minimum()) ? property.minimum() : -99999999999;
                     var maximum = _.isNumber(property.maximum()) ? property.maximum() : 99999999999;
-                    var gap = maximum - minimum;
 
                     var minFloat = this._getMinFloat(minimum);
                     if (minFloat < this._getMinFloat(maximum)) {
                         minFloat = this._getMinFloat(maximum);
                     }
                     var maxFloat = minFloat + _.random(0, 2);
-                    var littleGap = this._toFloat(_.random(0, gap, floating), _.random(minFloat, maxFloat)) / 10;
-                    ret = this._toFloat(_.random(minimum, maximum, floating), _.random(minFloat, maxFloat));
-                    if (ret === property.maximum()) {
-                        ret -= littleGap;
-                    }
-                    if (ret === property.minimum()) {
-                        ret += littleGap;
-                    }
-                    return ret;
+                    return this._toFloat(_.random(minimum, maximum, floating), _.random(minFloat, maxFloat));
             }
         },
 
