@@ -1,6 +1,6 @@
 {
   "name": "raml-1-mocker",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Node module to create mock service based on RAML 1.0 specification.",
   "main": "src/index.js",
   "directories": {
